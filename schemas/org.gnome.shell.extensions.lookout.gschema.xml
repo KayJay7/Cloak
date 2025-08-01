@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<schemalist>
+  <enum id="org.gnome.shell.extensions.lookout.modes">
+      <value nick="Regular" value="0"/>
+      <value nick="Low latency" value="1"/>
+  </enum>
+  <schema id="org.gnome.shell.extensions.lookout" path="/org/gnome/shell/extensions/lookout/">
+    <key name="reveal-shortcut" type="as">
+			<default><![CDATA[ ['<Super><Shift>F12'] ]]></default>
+      <summary>Reveal the screen</summary>
+      <description>Reveal the screen hidden by the Lookout extension</description>
+		</key>
+    <key name="hide-shortcut" type="as">
+			<default><![CDATA[ ['<Super><Shift>F11'] ]]></default>
+      <summary>Hide the screen</summary>
+      <description>Hide the screen and the cursor</description>
+		</key>
+    <key name="toggle-shortcut" type="as">
+			<default><![CDATA[ [] ]]></default>
+      <summary>Hide the screen</summary>
+      <description>Hide the screen and the cursor</description>
+		</key>
+    <key name="mode" enum="org.gnome.shell.extensions.lookout.modes">
+      <default>'Low latency'</default>
+      <summary>Select which mode to use</summary>
+      <description>"Regular" is intended to be regularly left enabled and has no cost when Visible.
+      "Low latency" tries to make hiding/revealing faster, at the cost of performance when Visible.
+      Any difference should be minimal.</description>
+    </key>
+  </schema>
+</schemalist>
