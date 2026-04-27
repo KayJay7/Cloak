@@ -286,6 +286,8 @@ class CloakRegular extends Cloak<StandardConfig> {
         this.actor.remove_effect(this.effect);
         // Stop keeping the cursor hidden
         this.cursorTracker.disconnect(this.cursorWatcherId)
+        // Reveal cursor
+        this.cursorTracker.uninhibit_cursor_visibility()
     }
 
     /**
@@ -308,7 +310,7 @@ class CloakRegular extends Cloak<StandardConfig> {
         this.cursorWatcherId = this.cursorTracker.connect(
             'visibility-changed',
             this.onVisibilityChanged.bind(this));
-        this.cursorTracker.set_pointer_visible(false);
+        this.cursorTracker.inhibit_cursor_visibility();
     }
 
     /**
@@ -347,7 +349,7 @@ class CloakRegular extends Cloak<StandardConfig> {
     private onVisibilityChanged(tracker: Meta.CursorTracker) {
         // Make the pointer invisible, but only if made visible by something else
         if (tracker.get_pointer_visible()) {
-            tracker.set_pointer_visible(false);
+            tracker.inhibit_cursor_visibility();
         }
     }
 }
@@ -448,7 +450,7 @@ class CloakLowLatency extends Cloak<StandardConfig> {
         this.status = Status.hidden;
         // this.effect.set_brightness(-1);
         this.actor.add_effect(this.effect);
-        this.cursorTracker.set_pointer_visible(false);
+        this.cursorTracker.inhibit_cursor_visibility();
     }
 
     /**
@@ -494,7 +496,10 @@ class CloakLowLatency extends Cloak<StandardConfig> {
         // and made visible by something else
         if (tracker.get_pointer_visible() &&
             this.status === Status.hidden) {
-            tracker.set_pointer_visible(false);
+            tracker.inhibit_cursor_visibility();
+        } else if (!tracker.get_pointer_visible()&&
+            this.status === Status.visible) {
+            tracker.uninhibit_cursor_visibility()
         }
     }
 }

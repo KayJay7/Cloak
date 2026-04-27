@@ -19,12 +19,12 @@
   },
   "homepage": "https://github.com/Lucide/lookout#readme",
   "devDependencies": {
-    "eslint": "^9.31.0",
-    "eslint-plugin-jsdoc": "^51.4.0",
-    "typescript": "^5.8.3"
+    "eslint": "10.2.1",
+    "eslint-plugin-jsdoc": "62.9.0",
+    "typescript": "6.0.3"
   },
   "dependencies": {
-    "@girs/gjs": "^4.0.0-beta.25",
-    "@girs/gnome-shell": "^48.0.2"
+    "@girs/gjs": "^4.0.0-rc.5",
+    "@girs/gnome-shell": "^49.1.0"
   }
 }
