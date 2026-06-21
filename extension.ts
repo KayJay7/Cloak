@@ -1,7 +1,8 @@
 import Gio from 'gi://Gio';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
-import { Cloak, CloakRegular, CloakLowLatency, StandardConfig } from './cloak.js';
+import Clutter from 'gi://Clutter';
+import { Cloak, CloakRegular, CloakLowLatency } from './cloak.js';
 // import ServiceMenu from './serviceMenu.js'
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -17,11 +18,16 @@ enum Modes {
     LOW_LATENCY = 1
 }
 
-function createStandardConfig(): StandardConfig {
-    let actor = global.stage;
-    let compositor = global.compositor;
-    let cursorTracker = global.backend.get_cursor_tracker();
-    return new StandardConfig(actor, compositor, cursorTracker);
+export class Context {
+    actor: Clutter.Actor;
+    compositor: Meta.Compositor;
+    cursorTracker: Meta.CursorTracker;
+
+    constructor() {
+        this.actor = Main.layoutManager.uiGroup;
+        this.compositor = global.compositor;
+        this.cursorTracker = global.backend.get_cursor_tracker();
+    }
 }
 
 /**
@@ -30,10 +36,9 @@ function createStandardConfig(): StandardConfig {
  * @param {Modes} mode - mode of operation 
  * @returns {Cloak} - New service object
  */
-function createService(mode: Modes): Cloak<StandardConfig> {
+function createService(mode: Modes): Cloak {
     // Fetching service constructor options 
     let basePath = `${Extension.lookupByUUID("lookout@mirolang.org")?.path}`;
-    let config = createStandardConfig()
 
     // Select correct implementation
     switch (mode) {
@@ -41,10 +46,10 @@ function createService(mode: Modes): Cloak<StandardConfig> {
             console.debug(`Lookout [debug]: Unsupported mode "${mode}", falling back to "Regular"`);
         case Modes.REGULAR:
             console.debug('Lookout [debug]: Regular mode');
-            return new CloakRegular(basePath, config);
+            return new CloakRegular(new Context, basePath);
         case Modes.LOW_LATENCY:
             console.debug('Lookout [debug]: Low latency mode');
-            return new CloakLowLatency(basePath, config);
+            return new CloakLowLatency(new Context, basePath);
     }
 }
 
@@ -53,7 +58,7 @@ function createService(mode: Modes): Cloak<StandardConfig> {
  */
 export default class Lookout extends Extension {
     private gsettings?: Gio.Settings;
-    private cloak?: Cloak<StandardConfig>;
+    private cloak?: Cloak;
     private windowManager = Main.wm;
     private layoutManager = Main.layoutManager;
     private displayWatcherId: number = 0;
@@ -100,7 +105,7 @@ export default class Lookout extends Extension {
     }
 
     private renew() {
-        this.cloak?.renew(createStandardConfig());
+        this.cloak?.renew(new Context());
 
     }
 

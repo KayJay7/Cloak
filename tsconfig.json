@@ -5,12 +5,12 @@
         "outDir": "./dist",
         "sourceMap": false,
         "strict": true,
-        "target": "ES2022",
+        "target": "ES2023",
         "removeComments": true,
         "incremental": false,
         "tsBuildInfoFile": "build/.tsbuildinfo",
         "lib": [
-            "ES2022"
+            "ES2023"
         ],
     },
     "include": [

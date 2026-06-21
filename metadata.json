@@ -4,6 +4,7 @@
     "uuid": "lookout@mirolang.org",
     "settings-schema": "org.gnome.shell.extensions.lookout",
     "shell-version": [
-        "49"
+        "49",
+        "50"
     ]
 }

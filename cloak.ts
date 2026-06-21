@@ -2,6 +2,8 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Clutter from 'gi://Clutter';
 import Meta from 'gi://Meta';
+import St from 'gi://St';
+import { Context } from './extension.js';
 
 /**
  * Status of the screen
@@ -14,10 +16,12 @@ enum Status {
 /**
  * Abstract DBus proxy object
  */
-abstract class Cloak<T> {
+abstract class Cloak {
     protected status: Status;
-    private exportedObject?: Gio.DBusExportedObject;
+    protected ctx: Context;
+    protected overlay: Clutter.Actor;
     protected ownerId: number;
+    private exportedObject?: Gio.DBusExportedObject;
 
     /**
      * Creates the objects and exports it on the DBus session bus
@@ -27,9 +31,14 @@ abstract class Cloak<T> {
      * 
      * @param {Meta.CursorTracker} cursorTracker - the tracker for the cursor to hide
      */
-    constructor(basePath: string) {
+    constructor(context: Context, basePath: string) {
         this.interfaceSchema = GLib.file_get_contents(`${basePath}/schemas/org.mirolang.Lookout.xml`)[1].toString();
         this.status = Status.visible;
+        this.ctx = context;
+
+        this.overlay = new St.Widget({
+            style: 'background-color: black;',
+        });
 
         // Own the well-known name on the session bus
         this.ownerId = Gio.DBus.own_name(
@@ -55,6 +64,18 @@ abstract class Cloak<T> {
         console.debug('Lookout [debug]: closing');
     }
 
+    protected attach() {
+        // Black out the screen
+        this.ctx.actor.add_child(this.overlay);
+        this.ctx.actor.set_child_above_sibling(this.overlay, null);
+    }
+
+    protected detach() {
+        if (this.overlay.get_parent() === this.ctx.actor) {
+            this.ctx.actor.remove_child(this.overlay);
+        }
+    }
+
     /**
      * Implementation of the reveal logic.
      * 
@@ -76,12 +97,12 @@ abstract class Cloak<T> {
     /**
      * Function to renew the service on display changes.
      * 
-     * Optionally, implementers can use the same config object
+     * Optionally, implementers can use the same context object
      * as parameter for the constructor.
      * 
-     * @param config Updated configuration
+     * @param context Updated context
      */
-    abstract renew(config: T): void
+    abstract renew(context: Context): void
 
     /////////////////
     // Callbacks
@@ -207,64 +228,36 @@ abstract class Cloak<T> {
     }
 }
 
-class StandardConfig {
-    actor: Clutter.Actor;
-    compositor: Meta.Compositor;
-    cursorTracker: Meta.CursorTracker;
-
-    constructor(actor: Clutter.Actor, compositor: Meta.Compositor, cursorTracker: Meta.CursorTracker) {
-        this.actor = actor;
-        this.compositor = compositor;
-        this.cursorTracker = cursorTracker;
-    }
-}
 
 /**
  * Cloak implementation for regular usage
  */
-class CloakRegular extends Cloak<StandardConfig> {
-    private actor: Clutter.Actor;
-    private compositor: Meta.Compositor;
-    private cursorTracker: Meta.CursorTracker;
-    private effect: Clutter.BrightnessContrastEffect;
-    private cursorWatcherId = 0;
-
+class CloakRegular extends Cloak {
     /**
      * Creates the objects and exports it on the DBus session bus
      * 
      * Before deleting the object, `close()` must be invoked to close DBus
      * and to cleanup the screen
      * 
+     * @param {Context} context - context with actors and trackers
      * @param {string} basePath - the basepath of the extension where to find the interface schema
-     * @param {Clutter.Actor} actor - the main actor to hide
-     * @param {Meta.Compositor} compositor - the compositor to disable unredirect on
-     * @param {Meta.CursorTracker} cursorTracker - the tracker for the cursor to hide
      */
     constructor(
+        context: Context,
         basePath: string,
-        config: StandardConfig,
-        // actor: Clutter.Actor,
-        // compositor: Meta.Compositor,
-        // cursorTracker: Meta.CursorTracker,
     ) {
-        super(basePath);
-        this.status = Status.visible;
-        this.actor = config.actor;
-        this.compositor = config.compositor;
-        this.cursorTracker = config.cursorTracker;
+        super(context, basePath);
 
-        // Create the effect only once
-        this.effect = new Clutter.BrightnessContrastEffect();
-        this.effect.set_brightness(-1);
-        this.effect.set_contrast(0);
+        this.renew(context);
+        this.overlay.reactive = true;
     }
 
     /**
      * Cleanup before deleting the object
      */
     close() {
-        // Fix the screen
         this.Reveal();
+        this.overlay.destroy();
         // Close DBus
         super.close();
     }
@@ -279,15 +272,10 @@ class CloakRegular extends Cloak<StandardConfig> {
      * the visibility changes in the cursor so it can keep.
      */
     protected revealImpl() {
+        this.detach();
+        this.ctx.cursorTracker.uninhibit_cursor_visibility()
+        this.ctx.compositor.enable_unredirect();
         this.status = Status.visible;
-        // Reenable unredirect
-        this.compositor.enable_unredirect();
-        // Reveal the screen
-        this.actor.remove_effect(this.effect);
-        // Stop keeping the cursor hidden
-        this.cursorTracker.disconnect(this.cursorWatcherId)
-        // Reveal cursor
-        this.cursorTracker.uninhibit_cursor_visibility()
     }
 
     /**
@@ -301,16 +289,10 @@ class CloakRegular extends Cloak<StandardConfig> {
      * the cursor invisible.
      */
     protected hideImpl() {
+        this.attach();
+        this.ctx.cursorTracker.inhibit_cursor_visibility();
+        this.ctx.compositor.disable_unredirect();
         this.status = Status.hidden;
-        // Disable unredirect
-        this.compositor.disable_unredirect();
-        // Black out the screen
-        this.actor.add_effect(this.effect);
-        // Make cursor permanently invisible
-        this.cursorWatcherId = this.cursorTracker.connect(
-            'visibility-changed',
-            this.onVisibilityChanged.bind(this));
-        this.cursorTracker.inhibit_cursor_visibility();
     }
 
     /**
@@ -318,38 +300,22 @@ class CloakRegular extends Cloak<StandardConfig> {
      * 
      * To be called on display changes
      * 
-     * @param {StandardConfig} config New configuration
+     * @param {Context} context New context
      */
-    renew(config: StandardConfig): void {
-        let oldStatus = this.status
+    renew(context: Context): void {
+        this.detach();
+        this.ctx = context;
 
-        // Cleanup old config
-        this.revealImpl()
+        // Re-bind overlay to the new actor if it changed
+        this.overlay.clear_constraints();
+        this.overlay.add_constraint(new Clutter.BindConstraint({
+            source: this.ctx.actor,
+            coordinate: Clutter.BindCoordinate.ALL,
+        }));
 
-        // New config
-        this.actor = config.actor
-        this.compositor = config.compositor;
-        this.cursorTracker = config.cursorTracker;
-
-        //eventually hide
-        if (oldStatus == Status.hidden) {
-            this.hideImpl()
-        }
-    }
-
-    /////////////////
-    // Callbacks
-    /////////////////
-
-    /**
-     * Invoked when the cursor being watched visibility changes.
-     * 
-     * @param {Meta.CursorTracker} tracker - the cursor tracker being watched
-     */
-    private onVisibilityChanged(tracker: Meta.CursorTracker) {
-        // Make the pointer invisible, but only if made visible by something else
-        if (tracker.get_pointer_visible()) {
-            tracker.inhibit_cursor_visibility();
+        // Eventually hide
+        if (this.status == Status.hidden) {
+            this.attach();
         }
     }
 }
@@ -357,13 +323,7 @@ class CloakRegular extends Cloak<StandardConfig> {
 /**
  * Low latency Cloak implementation
  */
-class CloakLowLatency extends Cloak<StandardConfig> {
-    private actor: Clutter.Actor;
-    private compositor: Meta.Compositor;
-    private cursorTracker: Meta.CursorTracker;
-    private effect: Clutter.BrightnessContrastEffect;
-    private cursorWatcherId = 0;
-
+class CloakLowLatency extends Cloak {
     /**
      * Creates the objects and exports it on the DBus session bus
      * 
@@ -374,39 +334,19 @@ class CloakLowLatency extends Cloak<StandardConfig> {
      * and tracks the visibility changes in the cursor so it can keep
      * the cursor invisible.
      * 
+     * @param {Context} context - context with actors and trackers
      * @param {string} basePath - the basepath of the extension where to find the interface schema
-     * @param {Clutter.Actor} actor - the main actor to hide
-     * @param {Meta.Compositor} compositor - the compositor to disable unredirect on
-     * @param {Meta.CursorTracker} cursorTracker - the tracker for the cursor to hide
      */
     constructor(
+        context: Context,
         basePath: string,
-        config: StandardConfig,
-        // actor: Clutter.Actor,
-        // compositor: Meta.Compositor,
-        // cursorTracker: Meta.CursorTracker,
     ) {
-        super(basePath);
-        this.status = Status.visible;
-        this.actor = config.actor;
-        this.compositor = config.compositor;
-        this.cursorTracker = config.cursorTracker;
+        super(context, basePath);
 
-        // Create the effect only once
-        this.effect = new Clutter.BrightnessContrastEffect();
-        // this.effect.set_brightness(0);
-        this.effect.set_contrast(0);
-        this.effect.set_brightness(-0.5);
-
-
-        // Disable unredirect
-        this.compositor.disable_unredirect();
-        // Black out the screen
-        // this.actor.add_effect(this.effect);
-        // Make cursor permanently invisible
-        this.cursorWatcherId = this.cursorTracker.connect(
-            'visibility-changed',
-            this.onVisibilityChanged.bind(this));
+        this.renew(context);
+        this.overlay.opacity = 0;
+        this.overlay.reactive = false;
+        this.ctx.compositor.disable_unredirect();
     }
 
     /**
@@ -416,14 +356,11 @@ class CloakLowLatency extends Cloak<StandardConfig> {
      * the visibility changes in the cursor so it can keep.
      */
     close() {
-        // Fix the screen
         this.Reveal();
         // Reenable unredirect
-        this.compositor.enable_unredirect();
-        // Reveal the screen
-        // this.actor.remove_effect(this.effect);
-        // Stop keeping the cursor hidden
-        this.cursorTracker.disconnect(this.cursorWatcherId)
+        this.ctx.compositor.enable_unredirect();
+        this.detach();
+        this.overlay.destroy();
         // Close DBus
         super.close();
     }
@@ -435,9 +372,10 @@ class CloakLowLatency extends Cloak<StandardConfig> {
      * only by the public Reveal and Toggle methods.
      */
     protected revealImpl() {
+        this.overlay.opacity = 0;
+        this.overlay.reactive = false;
+        this.ctx.cursorTracker.uninhibit_cursor_visibility();
         this.status = Status.visible;
-        // this.effect.set_brightness(0);
-        this.actor.remove_effect(this.effect);
     }
 
     /**
@@ -447,10 +385,12 @@ class CloakLowLatency extends Cloak<StandardConfig> {
      * only by the public Hide and Toggle methods.
      */
     protected hideImpl() {
+        this.overlay.opacity = 255;
+        this.overlay.reactive = true;
+        // Bring back on top
+        this.ctx.actor.set_child_above_sibling(this.overlay, null);
+        this.ctx.cursorTracker.inhibit_cursor_visibility();
         this.status = Status.hidden;
-        // this.effect.set_brightness(-1);
-        this.actor.add_effect(this.effect);
-        this.cursorTracker.inhibit_cursor_visibility();
     }
 
     /**
@@ -458,55 +398,25 @@ class CloakLowLatency extends Cloak<StandardConfig> {
      * 
      * To be called on display changes
      * 
-     * @param {StandardConfig} config New configuration
+     * @param {Context} context New context
      */
-    renew(config: StandardConfig): void {
-        // Cleanup old config (similar to `close()`)
-        this.compositor.enable_unredirect();
-        this.actor.remove_effect(this.effect);
-        this.cursorTracker.disconnect(this.cursorWatcherId)
+    renew(context: Context): void {
+        this.detach();
+        this.ctx = context;
 
-        // New config
-        this.actor = config.actor
-        this.compositor = config.compositor;
-        this.cursorTracker = config.cursorTracker;
+        // Re-bind overlay to the new actor if it changed
+        this.overlay.clear_constraints();
+        this.overlay.add_constraint(new Clutter.BindConstraint({
+            source: this.ctx.actor,
+            coordinate: Clutter.BindCoordinate.ALL,
+        }));
 
-        // Reactivate cloak (similar to `constructor()`)
-        this.compositor.disable_unredirect();
-        this.cursorWatcherId = this.cursorTracker.connect(
-            'visibility-changed',
-            this.onVisibilityChanged.bind(this));
-        if (this.status == Status.hidden) {
-            this.actor.add_effect(this.effect);
-        }
-    }
-
-    /////////////////
-    // Callbacks
-    /////////////////
-
-    /**
-     * Invoked when the cursor being watched visibility changes.
-     * 
-     * @param {Meta.CursorTracker} tracker - the cursor tracker being watched
-     */
-    private onVisibilityChanged(tracker: Meta.CursorTracker) {
-        // Make the pointer invisible,
-        // but only if hidden by us
-        // and made visible by something else
-        if (tracker.get_pointer_visible() &&
-            this.status === Status.hidden) {
-            tracker.inhibit_cursor_visibility();
-        } else if (!tracker.get_pointer_visible()&&
-            this.status === Status.visible) {
-            tracker.uninhibit_cursor_visibility()
-        }
+        this.attach();
     }
 }
 
 export {
     Cloak,
-    StandardConfig,
     CloakRegular,
     CloakLowLatency
 }
