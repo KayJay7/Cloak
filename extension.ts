@@ -22,11 +22,13 @@ export class Context {
     actor: Clutter.Actor;
     compositor: Meta.Compositor;
     cursorTracker: Meta.CursorTracker;
+    seat: Clutter.Seat;
 
     constructor() {
-        this.actor = Main.layoutManager.uiGroup;
+        this.actor = global.stage;
         this.compositor = global.compositor;
         this.cursorTracker = global.backend.get_cursor_tracker();
+        this.seat = Clutter.get_default_backend().get_default_seat();
     }
 }
 

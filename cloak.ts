@@ -1,8 +1,7 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Clutter from 'gi://Clutter';
-import Meta from 'gi://Meta';
-import St from 'gi://St';
+import Cogl from 'gi://Cogl';
 import { Context } from './extension.js';
 
 /**
@@ -36,9 +35,9 @@ abstract class Cloak {
         this.status = Status.visible;
         this.ctx = context;
 
-        this.overlay = new St.Widget({
-            style: 'background-color: black;',
-        });
+        this.overlay = new Clutter.Actor({
+            background_color: Cogl.Color.from_string("#000")[1],
+        })
 
         // Own the well-known name on the session bus
         this.ownerId = Gio.DBus.own_name(
@@ -274,6 +273,7 @@ class CloakRegular extends Cloak {
     protected revealImpl() {
         this.detach();
         this.ctx.cursorTracker.uninhibit_cursor_visibility()
+        this.ctx.seat.uninhibit_unfocus();
         this.ctx.compositor.enable_unredirect();
         this.status = Status.visible;
     }
@@ -291,6 +291,7 @@ class CloakRegular extends Cloak {
     protected hideImpl() {
         this.attach();
         this.ctx.cursorTracker.inhibit_cursor_visibility();
+        this.ctx.seat.inhibit_unfocus();
         this.ctx.compositor.disable_unredirect();
         this.status = Status.hidden;
     }
@@ -375,6 +376,7 @@ class CloakLowLatency extends Cloak {
         this.overlay.opacity = 0;
         this.overlay.reactive = false;
         this.ctx.cursorTracker.uninhibit_cursor_visibility();
+        this.ctx.seat.uninhibit_unfocus();
         this.status = Status.visible;
     }
 
@@ -390,6 +392,7 @@ class CloakLowLatency extends Cloak {
         // Bring back on top
         this.ctx.actor.set_child_above_sibling(this.overlay, null);
         this.ctx.cursorTracker.inhibit_cursor_visibility();
+        this.ctx.seat.inhibit_unfocus();
         this.status = Status.hidden;
     }
 
