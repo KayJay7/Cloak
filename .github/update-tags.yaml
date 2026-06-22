@@ -1,0 +1,16 @@
+name: "update-tags"
+description: "Updates Git tags for the latest release"
+
+inputs:
+  tag:
+    description: "The tag to delete"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Update tags
+      run: |
+        git tag -f latest
+        git push origin latest --force
+        git push origin :refs/tags/${{ inputs.tag }}
