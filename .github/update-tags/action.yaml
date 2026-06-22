@@ -10,7 +10,10 @@ runs:
   using: "composite"
   steps:
     - name: Update tags
+      shell: sh
+      env:
+        TAG: ${{ inputs.tag }}
       run: |
         git tag -f latest
         git push origin latest --force
-        git push origin :refs/tags/${{ inputs.tag }}
+        git push origin :refs/tags/"$TAG"
