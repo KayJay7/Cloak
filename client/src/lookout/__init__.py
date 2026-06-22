@@ -31,18 +31,19 @@ async def pair_once(gateway: Gateway):
 
     # listen for new devices joining at runtime and wait for ZHA to emit the FULL_INIT event
     def device_joined_listener(event):
-        if device := gateway.devices.get(event.device_info.ieee):
+        if not signal.done() and (device := gateway.devices.get(event.device_info.ieee)):
             logger.info(
                 f"Paired device: '{device.name}' ({device.ieee}) | Model: '{device.model}'"
             )
             signal.set_result(None)
 
-    gateway.on_event(ZHA_GW_MSG_DEVICE_FULL_INIT, device_joined_listener)
+    unsubscribe = gateway.on_event(ZHA_GW_MSG_DEVICE_FULL_INIT, device_joined_listener)
     try:
         async with asyncio.timeout(args.pair):
             await signal
     except asyncio.TimeoutError:
         logger.warning(f"No new device joined within {args.pair} seconds. Exiting.")
+    unsubscribe()
 
 
 async def subscribe(device: Device):
