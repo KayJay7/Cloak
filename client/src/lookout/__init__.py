@@ -22,8 +22,7 @@ logger = logging.getLogger("lookout")
 
 
 async def pair_once(gateway: Gateway):
-    loop = asyncio.get_running_loop()
-    signal = loop.create_future()
+    signal = asyncio.get_running_loop().create_future()
 
     # allow joining for n seconds
     # once the sensor is paired, it gets written to the db
@@ -36,7 +35,7 @@ async def pair_once(gateway: Gateway):
             logger.info(
                 f"Paired device: '{device.name}' ({device.ieee}) | Model: '{device.model}'"
             )
-            loop.call_soon_threadsafe(signal.set_result, None)
+            signal.set_result(None)
 
     gateway.on_event(ZHA_GW_MSG_DEVICE_FULL_INIT, device_joined_listener)
     try:
