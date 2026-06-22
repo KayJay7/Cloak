@@ -1,8 +1,4 @@
-.*
 dist
 node_modules
 build
 schemas/gschemas.compiled
-
-# Exceptions
-!.gitignore
