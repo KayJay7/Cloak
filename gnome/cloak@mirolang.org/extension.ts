@@ -40,17 +40,17 @@ export class Context {
  */
 function createService(mode: Modes): Cloak {
     // Fetching service constructor options 
-    let basePath = `${Extension.lookupByUUID("lookout@mirolang.org")?.path}`;
+    let basePath = `${Extension.lookupByUUID("cloak@mirolang.org")?.path}`;
 
     // Select correct implementation
     switch (mode) {
         default:
-            console.debug(`Lookout [debug]: Unsupported mode "${mode}", falling back to "Regular"`);
+            console.debug(`Cloak [debug]: Unsupported mode "${mode}", falling back to "Regular"`);
         case Modes.REGULAR:
-            console.debug('Lookout [debug]: Regular mode');
+            console.debug('Cloak [debug]: Regular mode');
             return new CloakRegular(new Context, basePath);
         case Modes.LOW_LATENCY:
-            console.debug('Lookout [debug]: Low latency mode');
+            console.debug('Cloak [debug]: Low latency mode');
             return new CloakLowLatency(new Context, basePath);
     }
 }
@@ -58,7 +58,7 @@ function createService(mode: Modes): Cloak {
 /**
  * Main extension class.
  */
-export default class Lookout extends Extension {
+export default class CloakExtension extends Extension {
     private gsettings?: Gio.Settings;
     private cloak?: Cloak;
     private windowManager = Main.wm;
@@ -78,7 +78,7 @@ export default class Lookout extends Extension {
     private addKeybinding(name: string, handler: Meta.KeyHandlerFunc) {
         // If it didn't fail, set the keybinding
         if (this.gsettings != null) {
-            console.debug(`Lookout [debug]: Fetch shortcut "${name}": "${this.gsettings.get_value(name)?.deepUnpack()}" (might change later)`);
+            console.debug(`Cloak [debug]: Fetch shortcut "${name}": "${this.gsettings.get_value(name)?.deepUnpack()}" (might change later)`);
             // AddKeybinding returns a number
             // for now we only need it to check for success
             let code = this.windowManager.addKeybinding(
@@ -88,12 +88,12 @@ export default class Lookout extends Extension {
                 Shell.ActionMode.ALL,       // Always available
                 handler);                   // Run handler when pressed
             if (code === Meta.KeyBindingAction.NONE) {
-                console.debug(`Lookout [debug]: Shortcut registered "${name}" with ID ${code}`);
+                console.debug(`Cloak [debug]: Shortcut registered "${name}" with ID ${code}`);
             } else {
-                console.error(`Lookout [error]: Failed to register shortcut "${name}", returned "Meta.KeyBindingAction.NONE`);
+                console.error(`Cloak [error]: Failed to register shortcut "${name}", returned "Meta.KeyBindingAction.NONE`);
             }
         } else {
-            console.error(`Lookout [error]: Failed to register shortcut "${name}", prefs not set`);
+            console.error(`Cloak [error]: Failed to register shortcut "${name}", prefs not set`);
         }
     }
 
@@ -118,18 +118,18 @@ export default class Lookout extends Extension {
      * and binds the keyboard shortcut to `service.Reveal()`.
      */
     enable() {
-        console.debug(`Lookout [debug]: ${Extension.lookupByUUID("lookout@mirolang.org")?.path}`);
-        console.debug('Lookout [debug]: Enabling');
+        console.debug(`Cloak [debug]: ${Extension.lookupByUUID("cloak@mirolang.org")?.path}`);
+        console.debug('Cloak [debug]: Enabling');
 
         // Get settings
         this.gsettings = this.getSettings();
-        console.debug('Lookout [debug]: Fetched prefs GSettings object');
+        console.debug('Cloak [debug]: Fetched prefs GSettings object');
 
         // Creating service object
         let mode: Modes = this.gsettings.get_enum("mode");
         this.cloak = createService(mode);
 
-        console.debug('Lookout [debug]: Service object created, DBus might not be acquired yet');
+        console.debug('Cloak [debug]: Service object created, DBus might not be acquired yet');
 
         // Watch for display changes
         this.displayWatcherId = this.layoutManager.connect(
@@ -149,7 +149,7 @@ export default class Lookout extends Extension {
      * and unbinds the keyboard shortcut to `service.Reveal()`.
      */
     disable() {
-        console.debug('Lookout [debug]: Disabling');
+        console.debug('Cloak [debug]: Disabling');
         // Remove keybindings
         this.removeKeybinding('reveal-shortcut');
         this.removeKeybinding('hide-shortcut');

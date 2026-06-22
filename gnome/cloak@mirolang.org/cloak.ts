@@ -31,7 +31,7 @@ abstract class Cloak {
      * @param {Meta.CursorTracker} cursorTracker - the tracker for the cursor to hide
      */
     constructor(context: Context, basePath: string) {
-        this.interfaceSchema = GLib.file_get_contents(`${basePath}/schemas/org.mirolang.Lookout.xml`)[1].toString();
+        this.interfaceSchema = GLib.file_get_contents(`${basePath}/schemas/org.mirolang.Cloak.xml`)[1].toString();
         this.status = Status.visible;
         this.ctx = context;
 
@@ -42,7 +42,7 @@ abstract class Cloak {
         // Own the well-known name on the session bus
         this.ownerId = Gio.DBus.own_name(
             Gio.BusType.SESSION,
-            'org.mirolang.Lookout',
+            'org.mirolang.Cloak',
             Gio.BusNameOwnerFlags.NONE,
             this.onBusAcquired.bind(this),
             this.onNameAcquired.bind(this),
@@ -60,7 +60,7 @@ abstract class Cloak {
         // Close DBus
         this.exportedObject?.unexport();
         Gio.bus_unown_name(this.ownerId);
-        console.debug('Lookout [debug]: closing');
+        console.debug('Cloak [debug]: closing');
     }
 
     protected attach() {
@@ -117,10 +117,10 @@ abstract class Cloak {
      * @param {String} _name - the name requested
      */
     private onBusAcquired(connection: Gio.DBusConnection, _name: String) {
-        console.debug(`Lookout [debug]: DBus connection "${connection.get_unique_name()}" acquired`);
+        console.debug(`Cloak [debug]: DBus connection "${connection.get_unique_name()}" acquired`);
         // Make the object available before obtaining the well-known name
         this.exportedObject = Gio.DBusExportedObject.wrapJSObject(this.interfaceSchema, this);
-        this.exportedObject.export(connection, '/org/mirolang/Lookout');
+        this.exportedObject.export(connection, '/org/mirolang/Cloak');
     }
 
     /**
@@ -130,7 +130,7 @@ abstract class Cloak {
      * @param {String} _name - the name requested
      */
     private onNameAcquired(_connection: Gio.DBusConnection, _name: String) {
-        console.debug('Lookout [debug]: DBus name "org.mirolang.Lookout" acquired (DBus ready)');
+        console.debug('Cloak [debug]: DBus name "org.mirolang.Cloak" acquired (DBus ready)');
         // Nothing to do
     }
 
@@ -143,7 +143,7 @@ abstract class Cloak {
      * @param {String} _name - the name requested
      */
     private onNameLost(_connection: Gio.DBusConnection, _name: String) {
-        console.error('Lookout [Error]: DBus name "org.mirolang.Lookout" busy');
+        console.error('Cloak [Error]: DBus name "org.mirolang.Cloak" busy');
         // Nothing we can do
     }
 
@@ -161,7 +161,7 @@ abstract class Cloak {
      * When the property changes it must be signaled on the exported object.
      */
     get Status() {
-        console.debug('Lookout [debug]: Status read');
+        console.debug('Cloak [debug]: Status read');
         return this.status;
     }
 
@@ -172,7 +172,7 @@ abstract class Cloak {
      * and signals Status changed if necessary.
      */
     Hide() {
-        console.debug('Lookout [debug]: Hide() invoked');
+        console.debug('Cloak [debug]: Hide() invoked');
         // Do nothing if already hidden
         if (this.status === Status.visible) {
             this.hideImpl()
@@ -190,7 +190,7 @@ abstract class Cloak {
      * and signals Status changed if necessary.
      */
     Reveal() {
-        console.debug('Lookout [debug]: Reveal() invoked');
+        console.debug('Cloak [debug]: Reveal() invoked');
         // Do nothing if already visible
         if (this.status === Status.hidden) {
             this.revealImpl()
@@ -208,16 +208,16 @@ abstract class Cloak {
      * It is implemented without calling Hide and Reveal
      */
     Toggle() {
-        console.debug('Lookout [debug]: Toggle() invoked');
+        console.debug('Cloak [debug]: Toggle() invoked');
         switch (this.status) {
             case Status.hidden:
                 this.revealImpl()
-                console.debug('Lookout [debug]: Toggle() made visible');
+                console.debug('Cloak [debug]: Toggle() made visible');
                 break;
 
             case Status.visible:
                 this.hideImpl()
-                console.debug('Lookout [debug]: Toggle() made hidden');
+                console.debug('Cloak [debug]: Toggle() made hidden');
                 break;
         }
         // Signal Status changed

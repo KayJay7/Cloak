@@ -1,8 +1,8 @@
 {
-    "name": "Lookout",
+    "name": "Cloak",
     "description": "Blacks out the screen on command",
-    "uuid": "lookout@mirolang.org",
-    "settings-schema": "org.gnome.shell.extensions.lookout",
+    "uuid": "cloak@mirolang.org",
+    "settings-schema": "org.gnome.shell.extensions.cloak",
     "shell-version": [
         "49",
         "50"

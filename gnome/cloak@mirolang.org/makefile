@@ -1,4 +1,4 @@
-NAME=lookout
+NAME=cloak
 DOMAIN=mirolang.org
 REVERSE_DOMAIN=org.mirolang
 
@@ -16,7 +16,7 @@ schemas/gschemas.compiled: schemas/org.gnome.shell.extensions.$(NAME).gschema.xm
 	glib-compile-schemas schemas
 
 build/$(NAME).zip: dist/extension.js dist/prefs.js dist/cloak.js metadata.json\
-				   schemas/gschemas.compiled schemas/org.mirolang.Lookout.xml
+				   schemas/gschemas.compiled schemas/org.mirolang.Cloak.xml
 	@mkdir -p build
 	@rm -f dist/schemas/*
 	@cp -r schemas dist/

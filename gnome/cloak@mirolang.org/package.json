@@ -1,5 +1,5 @@
 {
-  "name": "lookout",
+  "name": "cloak",
   "version": "0.1.0",
   "description": "Blacks out the screen on command",
   "type": "module",
@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Lucide/lookout.git"
+    "url": "git+https://github.com/KayJay7/Cloak.git"
   },
   "author": "Alvise Bruniera <alvisebruniera@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Lucide/lookout/issues"
+    "url": "https://github.com/KayJay7/Cloak/issues"
   },
-  "homepage": "https://github.com/Lucide/lookout#readme",
+  "homepage": "https://github.com/KayJay7/Cloak#readme",
   "devDependencies": {
     "eslint": "10.2.1",
     "eslint-plugin-jsdoc": "62.9.0",

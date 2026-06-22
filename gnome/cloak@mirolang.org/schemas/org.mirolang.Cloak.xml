@@ -1,5 +1,5 @@
 <node>
-  <interface name="org.mirolang.Lookout">
+  <interface name="org.mirolang.Cloak">
     <method name="Hide"/>
     <method name="Reveal"/>
     <method name="Toggle"/>
