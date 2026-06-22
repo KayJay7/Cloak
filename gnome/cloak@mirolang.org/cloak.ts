@@ -389,8 +389,6 @@ class CloakLowLatency extends Cloak {
     protected hideImpl() {
         this.overlay.opacity = 255;
         this.overlay.reactive = true;
-        // Bring back on top
-        this.ctx.actor.set_child_above_sibling(this.overlay, null);
         this.ctx.cursorTracker.inhibit_cursor_visibility();
         this.ctx.seat.inhibit_unfocus();
         this.status = Status.hidden;
