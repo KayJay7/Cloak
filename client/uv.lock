@@ -458,15 +458,17 @@ wheels = [
 [[package]]
 name = "lookout"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "aiostream" },
+    { name = "sdbus" },
     { name = "zha" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "aiostream", specifier = ">=0.7.1" },
+    { name = "sdbus", specifier = ">=0.14.2" },
     { name = "zha", specifier = ">=1.4.1" },
 ]
 
@@ -777,6 +779,17 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/77/65/38ab2f90df44c2febfb63cc10ced40763d9b4bc94d173e734528663fe7f5/rpds_py-2026.5.1-cp315-cp315t-musllinux_1_2_x86_64.whl", hash = "sha256:b1be5c35683684d5331b93600c210e8367c254683d8a6df6bd21bd2da3a334fb", size = 581839, upload-time = "2026-05-28T12:01:48.109Z" },
     { url = "https://files.pythonhosted.org/packages/15/2d/ce1f605fe036aadd460e5822e578c6c7ec3a860936cca37d6e0f299daa77/rpds_py-2026.5.1-cp315-cp315t-win32.whl", hash = "sha256:75808f6c38ce7749bb68cc2770161aae5045e6c6f6781a9782e74b93304399df", size = 207866, upload-time = "2026-05-28T12:01:49.648Z" },
     { url = "https://files.pythonhosted.org/packages/79/cb/966040123eb102371559746908ef2c9471f4d43e17ec9a645a2258dab64b/rpds_py-2026.5.1-cp315-cp315t-win_amd64.whl", hash = "sha256:90bd6630002a1c7f09e7843dd79f0d24f3d2897cc25a753480917865d14f15b3", size = 225441, upload-time = "2026-05-28T12:01:51.408Z" },
+]
+
+[[package]]
+name = "sdbus"
+version = "0.14.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7c/0f/0cf6b2fb0338fb3ab564cb8a8d68aa1c6de767851f5f9de9a3c83dbabeab/sdbus-0.14.2.tar.gz", hash = "sha256:4f5d13b196e1e1de35311ebb2563a32de791451a30f5b9a4894528ba98766412", size = 89923, upload-time = "2025-12-21T20:22:32.683Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6b/e0/43d2c3e0cc6f6c345df5f3230e2a9c62bd8ae8608d401f582ccf943da14d/sdbus-0.14.2-cp39-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:fbed8db91668ad537089c42a71d30e2472faa2e6616a461441ab0d51344a461c", size = 769099, upload-time = "2025-12-21T20:22:27.773Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/0b/043869e8e53fe267b0fc9a98688f8ec9131ae2761a1665ee7c553b67ba69/sdbus-0.14.2-cp39-abi3-manylinux_2_28_armv7l.whl", hash = "sha256:019871c00d9c2eeb5b40c3f3c94ff1d6579a49e245d6ecaf3bd9e245c4b248bc", size = 698023, upload-time = "2025-12-21T20:22:29.518Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/f8/416467419d3345763372aaa51ef389fc95d0bd210679561edb63daa49933/sdbus-0.14.2-cp39-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:8a64bbb6280104efeb24a9632a9ebd5504e9c9c1349594142bbe50e734f16c83", size = 742236, upload-time = "2025-12-21T20:22:31.207Z" },
 ]
 
 [[package]]

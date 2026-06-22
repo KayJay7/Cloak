@@ -9,6 +9,7 @@ from zha.application.helpers import CoordinatorConfiguration, ZHAConfiguration, 
 from zha.const import STATE_CHANGED
 
 from lookout.args import args
+from lookout.dbus import cloak
 
 # basic error logging to see zigpy and ZHA internals if the radio fails
 # or if a device misbehaves.
@@ -72,8 +73,9 @@ async def subscribe(device: Device):
 
 
 async def handler(has_open: bool):
-    if not ((has_open and args.only_close) or (not has_open and args.only_open)):
+    if (has_open and not args.only_close) or (not has_open and not args.only_open):
         logger.info(f"do action {'open' if has_open else 'close'}")
+        await cloak.hide()
 
 
 async def loop():
