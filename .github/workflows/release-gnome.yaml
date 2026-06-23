@@ -1,0 +1,55 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - rel-gnome
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: gnome/cloak@mirolang.org
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            .github
+            gnome/cloak@mirolang.org
+
+      - name: setup npm
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: gnome/cloak@mirolang.org/package-lock.json
+
+
+      - name: build package
+        run: make pack
+
+      # - id: version
+      #   run: |
+      #     VERSION=$(jq -r '. as $root | $root.version' package.json)
+      #     echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: ./.github/update-tags
+        with:
+          tag: rel-gnome
+
+      - uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          artifacts: gnome/cloak@mirolang.org/build/*.zip
+          omitBody: true
+          tag: latest
+          name: "Cloak latest"
