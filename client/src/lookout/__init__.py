@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 
 import aiostream
 from zha.application import Platform
@@ -31,9 +32,11 @@ async def pair_once(gateway: Gateway):
 
     # listen for new devices joining at runtime and wait for ZHA to emit the FULL_INIT event
     def device_joined_listener(event):
-        if not signal.done() and (device := gateway.devices.get(event.device_info.ieee)):
+        if not signal.done() and (
+            device := gateway.devices.get(event.device_info.ieee)
+        ):
             logger.info(
-                f"Paired device: '{device.name}' ({device.ieee}) | Model: '{device.model}'"
+                f"Paired device: '{device.name}' ({device.ieee}) | Model: '{device.model}'."
             )
             signal.set_result(None)
 
@@ -48,13 +51,13 @@ async def pair_once(gateway: Gateway):
 
 async def subscribe(device: Device):
     logger.info(
-        f"Subscribe to: '{device.name}' ({device.ieee}) | Model: '{device.model}'"
+        f"Subscribe to: '{device.name}' ({device.ieee}) | Model: '{device.model}'."
     )
     queue = asyncio.Queue[bool]()
     # door sensors must expose a BINARY_SENSOR platform entity under the hood
     for (platform, unique_id), entity in device.platform_entities.items():
         logger.info(
-            f"Entity: '{platform}' ({unique_id})",
+            f"Entity: '{platform}' ({unique_id}).",
         )
         if platform == Platform.BINARY_SENSOR:
 
@@ -63,7 +66,7 @@ async def subscribe(device: Device):
                 queue.put_nowait(bool(is_open))
 
             unsubscribe = entity.on_event(STATE_CHANGED, state_changed_listener)
-            logger.info(f"Subscribed to door sensor: '{device.name}' ({device.ieee})")
+            logger.info(f"Subscribed to door sensor: '{device.name}' ({device.ieee}).")
             try:
                 while True:
                     yield await queue.get()
@@ -74,11 +77,11 @@ async def subscribe(device: Device):
 
 async def handler(has_open: bool):
     if (has_open and not args.only_close) or (not has_open and not args.only_open):
-        logger.info(f"do action {'open' if has_open else 'close'}")
+        logger.info(f"Action {'open' if has_open else 'close'}.")
         await cloak.hide()
 
 
-async def loop():
+async def amain():
     # configure the ZHA Gateway
     # the zigpy_config provides the database path where the paired network
     # and device states+keys are saved locally
@@ -115,6 +118,7 @@ async def loop():
                 logger.info(
                     f"Found paired device: '{device.name}' ({ieee}) | Model: '{device.model}'"
                     + ("" if device.model == args.model else " - skipped")
+                    + "."
                 )
                 if device.model == args.model:
                     yield subscribe(device)
@@ -124,24 +128,17 @@ async def loop():
             async for event in streamer:
                 await handler(event)
 
-    except asyncio.CancelledError:
-        # expected exception when the asyncio loop is stopped
-        pass
-    except Exception as e:
-        # basic error handling: catch serial port failures, corrupted databases, etc
-        logger.error(f"A critical error occurred: {e}")
     finally:
-        # clean up and shut down the gateway gracefully
-        # this is vital so the EmberZNet coordinator's serial port lock gets cleanly released
-        logger.info("Shutting down ZHA gateway...")
-        await gateway.shutdown()
+        logger.info("Exiting...")
+        os._exit(0)
+    # zha+bellows teardown is currently broken
+    # except Exception:
+    #     await gateway.shutdown()
+    #     pass
 
 
 def main():
-    try:
-        asyncio.run(loop())
-    except KeyboardInterrupt:
-        print("\nExiting...")
+    asyncio.run(amain())
 
 
 if __name__ == "__main__":
