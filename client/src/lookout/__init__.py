@@ -130,7 +130,7 @@ async def amain():
 
     finally:
         logger.info("Exiting...")
-        os._exit(0)
+        os._exit(1)
     # zha+bellows teardown is currently broken
     # except Exception:
     #     await gateway.shutdown()
